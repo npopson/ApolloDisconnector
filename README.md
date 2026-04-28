@@ -1,6 +1,6 @@
 # Apollo Disconnector
 
-A small Windows utility for Apollo/Moonlight hosts. It listens for local keyboard input and calls Apollo's local API to close the active streaming app/session, which should run Apollo's normal quit/undo path and unblack the host display.
+A small Windows utility for Apollo/Sunshine hosts. It listens for local keyboard input and calls Apollo's local API to close the active streaming app/session, which should run Apollo's normal quit/undo path and unblack the host display.
 
 ## First Run
 
