@@ -14,6 +14,12 @@ To rerun setup later:
 ApolloDisconnector.exe --setup
 ```
 
+To uninstall startup integration and saved settings:
+
+```powershell
+ApolloDisconnector.exe --uninstall
+```
+
 ## Publish
 
 ```powershell

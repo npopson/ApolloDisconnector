@@ -14,6 +14,14 @@ if (!OperatingSystem.IsWindows())
 
 var config = AppConfig.Load();
 var forceSetup = args.Any(arg => arg.Equals("--setup", StringComparison.OrdinalIgnoreCase));
+var uninstall = args.Any(arg => arg.Equals("--uninstall", StringComparison.OrdinalIgnoreCase));
+if (uninstall)
+{
+    ConsoleManager.Show();
+    Uninstaller.Run();
+    return 0;
+}
+
 if (forceSetup || !config.HasRequiredSettings)
 {
     ConsoleManager.Show();
@@ -384,6 +392,9 @@ internal static class StartupInstaller
 {
     private const string StartupScriptName = "ApolloDisconnector.vbs";
 
+    public static string StartupScriptPath =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), StartupScriptName);
+
     public static bool CanInstallOrLaunch =>
         Environment.ProcessPath is { } path
         && !path.EndsWith("dotnet.exe", StringComparison.OrdinalIgnoreCase);
@@ -398,7 +409,7 @@ internal static class StartupInstaller
         }
 
         var startupPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-        var scriptPath = Path.Combine(startupPath, StartupScriptName);
+        var scriptPath = StartupScriptPath;
         var workingDirectory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
         var script = "Set shell = CreateObject(\"WScript.Shell\")" + Environment.NewLine
@@ -410,9 +421,45 @@ internal static class StartupInstaller
         Console.WriteLine($"Startup entry installed: {scriptPath}");
     }
 
+    public static bool Uninstall()
+    {
+        var scriptPath = StartupScriptPath;
+        if (!File.Exists(scriptPath))
+        {
+            return false;
+        }
+
+        File.Delete(scriptPath);
+        return true;
+    }
+
     private static string EscapeVbs(string value)
     {
         return value.Replace("\"", "\"\"");
+    }
+}
+
+internal static class Uninstaller
+{
+    public static void Run()
+    {
+        Console.WriteLine("Apollo Disconnector uninstall");
+        Console.WriteLine();
+
+        var removedStartup = StartupInstaller.Uninstall();
+        Console.WriteLine(removedStartup
+            ? $"Removed startup entry: {StartupInstaller.StartupScriptPath}"
+            : "No startup entry was found.");
+
+        var removedSettings = AppConfig.DeleteSettings();
+        Console.WriteLine(removedSettings
+            ? $"Removed settings folder: {AppConfig.ConfigDirectory}"
+            : "No settings folder was found.");
+
+        Console.WriteLine();
+        Console.WriteLine("Uninstall complete. You can delete ApolloDisconnector.exe whenever you want.");
+        Console.WriteLine("Press Enter to close this window.");
+        _ = Console.ReadLine();
     }
 }
 
@@ -983,6 +1030,17 @@ internal sealed class AppConfig
     {
         Directory.CreateDirectory(ConfigDirectory);
         File.WriteAllText(ConfigPath, JsonSerializer.Serialize(config, JsonOptions));
+    }
+
+    public static bool DeleteSettings()
+    {
+        if (!Directory.Exists(ConfigDirectory))
+        {
+            return false;
+        }
+
+        Directory.Delete(ConfigDirectory, recursive: true);
+        return true;
     }
 
     public static string BuildCloseApiUrl(string webUrl)
